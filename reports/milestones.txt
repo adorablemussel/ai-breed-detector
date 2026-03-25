@@ -1,0 +1,24 @@
+Kamienie milowe dla grupy Szymon Krzysztofik, Tadeusz Kogut
+
+1. Określenie tematu, celu projektu i stosu technologicznego
+    Opis: Zdefiniowanie problemu uczenia maszynowego jako klasyfikacji wieloklasowej (multi-class classification) obrazów. Celem jest stworzenie modelu, który na podstawie wyjścia warstwy Softmax będzie interpretował prawdopodobieństwo przynależności psa na zdjęciu do poszczególnych ras (symulacja rozpoznawania mieszanek). Wybór narzędzi i bibliotek (np. Python, PyTorch/TensorFlow, OpenCV).
+    Oczekiwany wynik: Dokumentacja początkowa z jasno zdefiniowanym celem ML i wybranym środowiskiem pracy.
+
+2. Pozyskanie i przygotowanie zbioru danych (Data Preprocessing)
+    Opis: Pobranie wybranego zbioru danych (np. Stanford Dogs Dataset). Wstępne czyszczenie danych oraz kluczowy podział na zbiory: treningowy, walidacyjny i testowy. Zastosowanie technik augmentacji danych (np. obracanie, zmiana kontrastu, odbicia lustrzane) w celu sztucznego powiększenia zbioru i zapobiegania przeuczeniu modelu (overfitting).
+    Oczekiwany wynik: Gotowy potok danych (Data Pipeline / DataLoader) zaimplementowany w kodzie, gotowy do zasilenia sieci neuronowej.
+
+3. Wybór architektury i implementacja modelu AI
+    Opis: Wykorzystanie techniki Transfer Learningu (uczenia transferowego). Załadowanie wstępnie wytrenowanej głębokiej sieci konwolucyjnej (np. ResNet50 lub MobileNetV2) i dostosowanie jej ostatniej warstwy klasyfikującej do liczby ras w naszym zbiorze. Napisanie pętli uczącej i przeprowadzenie procesu trenowania na przygotowanych danych.
+    Oczekiwany wynik: Wytrenowany model AI, którego wagi zostały poprawnie zapisane do pliku, gotowy do ewaluacji.
+
+4. Ewaluacja wyników i optymalizacja modelu
+    Opis: Testowanie modelu na odseparowanym zbiorze testowym. Obliczenie kluczowych metryk, w tym dokładności ogólnej (Accuracy) oraz Top-k Accuracy (np. Top-3 – sprawdzenie, czy prawdziwa rasa znajduje się w pierwszej trójce predykcji). Analiza błędów modelu z wykorzystaniem Macierzy Pomyłek (Confusion Matrix) oraz ewentualne dostrojenie hiperparametrów (np. współczynnika uczenia – learning rate).
+    Oczekiwany wynik: Raport z wynikami metryk oraz zoptymalizowany model osiągający najwyższą możliwą skuteczność na danych testowych.
+
+5. Budowa prototypu (Proof of Concept) i prezentacja wyników
+    Opis: Stworzenie prostego interfejsu graficznego (np. przy użyciu biblioteki Gradio lub Streamlit), który pozwoli użytkownikowi na wgranie zdjęcia psa i wyświetli estetyczny wykres z procentowymi wynikami predykcji. Analiza zachowania modelu na tzw. przypadkach brzegowych – prawdziwych zdjęciach psów nierasowych (kundelków) zrobionych telefonem.
+    Oczekiwany wynik: Działające demo aplikacji gotowe do zaprezentowania prowadzącemu na zajęciach oraz ostateczny raport podsumowujący projekt.
+
+ 
+
