@@ -16,3 +16,4 @@ ai-breed-detector/
 +-- saved_models/        (Tu będą lądować wagi Waszej sieci po treningu, np. best_model.pth)
 +-- results/             (Wykresy uczenia z dokładnością i macierz pomyłek)
 +-- reports/             (Dokumentacja, kamienie milowe, raport końcowy)
++-- venv/                (Środowisko wirtualne Pythona)
