@@ -1,0 +1,23 @@
+# KONFIGURACJA ŚRODOWISKA:
+# python -m venv venv
+# venv\Scripts\activate
+# pip install -r requirements.txt
+
+# biblioteki PyTorch
+torch
+torchvision
+
+# praca z danymi i matematyka
+numpy
+pandas
+scikit-learn  # przyda się do generowania macierzy pomyłek (Confusion Matrix)
+
+# wizualizacja (do wyświetlania psów w notatniku)
+matplotlib
+seaborn
+
+# notatniki Jupyter
+notebook
+
+# interfejs graficzny
+gradio

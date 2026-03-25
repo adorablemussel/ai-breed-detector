@@ -1,0 +1,18 @@
+ai-breed-detector/
+|
++-- data/
+|   +-- raw/             (Pobrany dataset, np. ZIP z Kaggle i wypakowane foldery ras)
+|       +-- dogs.zip
+|   +-- processed/       (Przetworzone zdjęcia i podział na foldery: train/val/test)
+|
++-- notebooks/           (Brudnopisy w Jupyterze - do wizualizacji danych i szybkich testów)
+|
++-- src/                 (Katalog z czystym kodem)
+|   +-- data_prep.py     (Skrypt dzielący zdjęcia na zbiory i robiący augmentację)
+|   +-- model.py         (Definicja architektury sieci, załadowanie np. ResNet)
+|   +-- train.py         (Główna pętla ucząca model)
+|   +-- app.py           (Skrypt z inferencją/aplikacją np. w Gradio lub Streamlit)
+|
++-- saved_models/        (Tu będą lądować wagi Waszej sieci po treningu, np. best_model.pth)
++-- results/             (Wykresy uczenia z dokładnością i macierz pomyłek)
++-- reports/             (Dokumentacja, kamienie milowe, raport końcowy)

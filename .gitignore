@@ -1,0 +1,18 @@
+# foldery z danymi obrazowymi
+data/raw/
+data/processed/
+
+# wagi modeli
+saved_models/
+*.pth
+*.pt
+
+# środowisko pythona
+venv/
+.env/
+.venv/
+
+# pamięć podręczna i śmieci
+__pycache__/
+*.pyc
+.DS_Store
