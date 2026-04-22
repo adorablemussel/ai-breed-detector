@@ -2,8 +2,8 @@ ai-breed-detector/
 |
 +-- data/
 |   +-- raw/                        (Pobrany dataset, np. ZIP z Kaggle i wypakowane foldery ras)
-|   |   +-- dogs.zip
-|   |   +-- dogs/
+|   |   +-- annotations
+|   |   +-- images
 |   +-- processed/                  (Przetworzone zdjęcia i podział na foldery: train/val/test)
 |
 +-- notebooks/                      (Brudnopisy w Jupyterze - do wizualizacji danych i szybkich testów)
@@ -20,7 +20,6 @@ ai-breed-detector/
 |
 +-- reports/                        (Dokumentacja, kamienie milowe, raport końcowy)
 |   +-- presentations/
-|   |   +-- milestone-1.pdf
 |   +-- project-structure.txt       (JESTEŚ TUTAJ!)
 |   +-- milestones.txt
 |

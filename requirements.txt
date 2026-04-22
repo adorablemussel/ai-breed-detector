@@ -1,3 +1,7 @@
+# wymuszenie pobierania wersji z obsługą karty graficznej (CUDA 12.1)
+# (aby CUDA była wspierana, potrzebujemy wersji pythona: 3.8/3.9/3.10/3.11/3.12)
+--extra-index-url https://download.pytorch.org/whl/cu121
+
 # KONFIGURACJA ŚRODOWISKA:
 # python -m venv venv
 # venv\Scripts\activate
