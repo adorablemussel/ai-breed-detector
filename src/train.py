@@ -9,11 +9,20 @@ from pathlib import Path
 BASE_DIR = Path(__file__).parent.parent
 PROCESSED_DIR = BASE_DIR / "data" / "processed"
 
+MODEL_NAME = 'best_model.pth'
+SAVE_PATH = BASE_DIR/"saved_models"
+
 BATCH_SIZE = 32         # - rozmiar jednej paczki do nauki
-EPOCHS = 5              # - liczba przerobień całego datasetu
+EPOCHS = 20             # - liczba przerobień całego datasetu
 LEARNING_RATE = 0.001   # - krok spadku błędu przy optymalizacji
 
 def train_model():
+    # informacje o stałych
+    print(f"Nazwa uczonego modelu: {MODEL_NAME}")
+    print(f"Rozmiar pojedynczej partii: {BATCH_SIZE}")
+    print(f"Liczba wszystkich epok: {EPOCHS}")
+    print(f"Współczynnik uczenia się: {LEARNING_RATE}")
+
     # wybieramy jednostkę do przeprowadzenia uczenia
     if torch.cuda.is_available():
         device = torch.device("cuda")
@@ -107,10 +116,9 @@ def train_model():
               f"Bład Walidacji: {val_loss/len(val_loader):.4f} | Dokładność Walidacji: {val_acc:.2f}%")
         
     # zapis modelu
-    SAVE_PATH = BASE_DIR/"saved_models"
     SAVE_PATH.mkdir(parents=True, exist_ok=True)
-    torch.save(model.state_dict(), SAVE_PATH/"best_model.pth")
-    print(f"\nUkończono Proces Uczenia Maszynowego.\nModel został zapisany w: {SAVE_PATH/'best_model.pth'}")
+    torch.save(model.state_dict(), SAVE_PATH/MODEL_NAME)
+    print(f"\nUkończono Proces Uczenia Maszynowego.\nModel został zapisany w: {SAVE_PATH/MODEL_NAME}")
 
 if __name__ == "__main__":
     train_model()
