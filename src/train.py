@@ -11,8 +11,10 @@ BASE_DIR = Path(__file__).parent.parent
 PROCESSED_DIR = BASE_DIR / "data" / "processed"
 
 MODEL_NAME = 'best_model.pth'
-SAVE_PATH = BASE_DIR/"saved_models"
+SAVE_PATH = BASE_DIR / "saved_models"
+
 PLOT_NAME = 'training_results.png'
+PLOT_DIR = BASE_DIR / "reports" / "plots"
 
 BATCH_SIZE = 32         # - rozmiar jednej paczki do nauki
 EPOCHS = 20             # - liczba przerobień całego datasetu
@@ -68,7 +70,7 @@ def train_model():
     criterion = nn.CrossEntropyLoss()
     optimizer = optim.Adam(model.parameters(), lr = LEARNING_RATE)
 
-    # --- STRUKTURA DO PRZECHOWYWANIA STATYSTYK (DODANO) ---
+    # --- STRUKTURA DO PRZECHOWYWANIA STATYSTYK ---
     history = {
         'train_loss': [],
         'train_acc': [],
@@ -125,7 +127,7 @@ def train_model():
         epoch_val_loss = val_loss / len(val_loader)
         epoch_val_acc = 100 * correct_val / total_val
 
-        # ZAPISYWANIE WYNIKÓW DO HISTORII (DODANO)
+        # ZAPISYWANIE WYNIKÓW DO HISTORII 
         history['train_loss'].append(epoch_train_loss)
         history['train_acc'].append(epoch_train_acc)
         history['val_loss'].append(epoch_val_loss)
@@ -138,7 +140,7 @@ def train_model():
               f"Loss T: {epoch_train_loss:.4f} | Acc T: {epoch_train_acc:.2f}% | "
               f"Loss V: {epoch_val_loss:.4f} | Acc V: {epoch_val_acc:.2f}%")
         
-    # --- GENEROWANIE WYKRESÓW (DODANO) ---
+    # --- GENEROWANIE WYKRESÓW ---
     print("\nGenerowanie wykresów...")
     epochs_range = range(1, EPOCHS + 1)
     
@@ -163,8 +165,8 @@ def train_model():
     plt.legend()
 
     plt.tight_layout()
-    plt.savefig(BASE_DIR / PLOT_NAME)
-    print(f"Wykresy zostały zapisane jako: {BASE_DIR / PLOT_NAME}")
+    plt.savefig(PLOT_DIR / PLOT_NAME)
+    print(f"Wykresy zostały zapisane jako: {PLOT_DIR / PLOT_NAME}")
         
     # zapis modelu
     SAVE_PATH.mkdir(parents=True, exist_ok=True)
