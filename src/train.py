@@ -114,10 +114,13 @@ def train_model():
 
         with torch.no_grad(): # podczas testów nie aktualizujemy wag
             for images, labels in val_loader:
-                images, labels = images.to(device), labels.to(device)
-                outputs = model(images)
-                loss = criterion(outputs, labels)
+                images = images.to(device)
+                labels = labels.to(device)
 
+                outputs = model(images)             # 1 - predykcja
+                loss = criterion(outputs, labels)   # 2 - obliczenie błędu
+
+                # statystyki
                 val_loss += loss.item()
                 _, predicted = torch.max(outputs.data, 1)
                 total_val += labels.size(0)
