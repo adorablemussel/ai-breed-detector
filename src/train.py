@@ -17,7 +17,7 @@ PLOT_NAME = 'training_results.png'
 PLOT_DIR = BASE_DIR / "reports" / "plots"
 
 BATCH_SIZE = 32         # - rozmiar jednej paczki do nauki
-EPOCHS = 20             # - liczba przerobień całego datasetu
+EPOCHS = 20              # - liczba przerobień całego datasetu
 LEARNING_RATE = 0.001   # - krok spadku błędu przy optymalizacji
 
 def train_model():
