@@ -1,0 +1,6 @@
+RAPORT Z EWALUACJI MODELU
+==============================
+Skutecznoœæ ogólna (Top-1): 63.65%
+Skutecznoœæ Top-3: 82.90%
+Przetestowano na ³¹cznie: 2058 obrazach.
+

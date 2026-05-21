@@ -4,8 +4,11 @@ import torch.nn as nn
 import torch.optim as optim
 from torchvision import datasets, transforms, models
 from torch.utils.data import DataLoader
+from torch.optim.lr_scheduler import ReduceLROnPlateau
 from pathlib import Path
 import matplotlib.pyplot as plt
+
+from model import get_model
 
 BASE_DIR = Path(__file__).parent.parent
 PROCESSED_DIR = BASE_DIR / "data" / "processed"
@@ -17,7 +20,7 @@ PLOT_NAME = 'training_results.png'
 PLOT_DIR = BASE_DIR / "reports" / "plots"
 
 BATCH_SIZE = 32         # - rozmiar jednej paczki do nauki
-EPOCHS = 20              # - liczba przerobień całego datasetu
+EPOCHS = 10              # - liczba przerobień całego datasetu
 LEARNING_RATE = 0.001   # - krok spadku błędu przy optymalizacji
 
 def train_model():
@@ -34,10 +37,12 @@ def train_model():
         device = torch.device("cpu")
     print(f"Do treningu modelu wybrano: {device}")
 
-    # dostosowanie zdjęć do nauki
+    # ekstremalna augmentacja do walki z przeuczeniem
     train_transforms_data = [
         transforms.Resize((224, 224)),
-        transforms.RandomHorizontalFlip(), # - zapobiega przeuczaniu się
+        transforms.RandomHorizontalFlip(),
+        transforms.RandomRotation(15), # Losowe obroty o 15 stopni
+        transforms.ColorJitter(brightness=0.2, contrast=0.2), # Zmiana oświetlenia
         transforms.ToTensor(),
         transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
     ]
@@ -60,15 +65,22 @@ def train_model():
     train_loader = DataLoader(train_dataset, batch_size=BATCH_SIZE, shuffle=True)
     val_loader = DataLoader(val_dataset, batch_size=BATCH_SIZE, shuffle=False)
 
-    # wybór modelu, nowy head na 120 wyjść (a nie defaultowe 1000), wysłanie do urządzenia
-    model = models.resnet18(weights=models.ResNet18_Weights.DEFAULT) # (można przetestować resnet50)
-    num_ftrs = model.fc.in_features
-    model.fc = nn.Linear(num_ftrs, class_count)
+    # Budowa modelu (ResNet50)
+    model = get_model(class_count=class_count, pretrained=True)
+    
+    # --- DWUETAPOWY TRENING (KROK 1: Zamrożenie kręgosłupa) ---
+    print("Inicjalizacja: Zamrażam kręgosłup sieci.")
+    for param in model.parameters():
+        param.requires_grad = False
+    for param in model.fc.parameters(): # Odmrażamy TYLKO nową głowę
+        param.requires_grad = True
+
     model = model.to(device)
 
-    # funkcja błędu i optymalizator
+    # Optymalizator, funkcja błędu, scheduler (Zmniejsza LR, gdy model przestaje się uczyć)
     criterion = nn.CrossEntropyLoss()
-    optimizer = optim.Adam(model.parameters(), lr = LEARNING_RATE)
+    optimizer = optim.Adam(model.fc.parameters(), lr=LEARNING_RATE)
+    scheduler = ReduceLROnPlateau(optimizer, mode='min', patience=2, factor=0.5, verbose=True)
 
     # --- STRUKTURA DO PRZECHOWYWANIA STATYSTYK ---
     history = {
@@ -81,6 +93,16 @@ def train_model():
     # PĘTLA UCZENIA MASZYNOWEGO
     print("\nROZPOCZYNAM UCZENIE")
     for i in range(EPOCHS):
+
+        # --- DWUETAPOWY TRENING (KROK 2: Odmrażanie w 5 epoce) ---
+        if i == 5:
+            print("\n>>> Odmrażanie całej sieci (Fine-Tuning)! Zmniejszam bazowy Learning Rate. <<<")
+            for param in model.parameters():
+                param.requires_grad = True
+            # Tworzymy optymalizator na nowo, tym razem dla całej sieci z dużo mniejszym krokiem
+            optimizer = optim.Adam(model.parameters(), lr=0.0001)
+            scheduler = ReduceLROnPlateau(optimizer, mode='min', patience=2, factor=0.5, verbose=True)
+
         model.train() # - tryb nauki
         running_loss = float(0)
         correct_train = int(0)
@@ -130,7 +152,10 @@ def train_model():
         epoch_val_loss = val_loss / len(val_loader)
         epoch_val_acc = 100 * correct_val / total_val
 
-        # ZAPISYWANIE WYNIKÓW DO HISTORII 
+        # aktualizacja Schedulera (sprawdza czy błąd walidacji spada)
+        scheduler.step(epoch_val_loss)
+
+        # ZAPISYWANIE WYNIKÓW DO HISTORII
         history['train_loss'].append(epoch_train_loss)
         history['train_acc'].append(epoch_train_acc)
         history['val_loss'].append(epoch_val_loss)
