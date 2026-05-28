@@ -4,7 +4,7 @@ import torch.nn as nn
 import torch.optim as optim
 from torchvision import datasets, transforms, models
 from torch.utils.data import DataLoader
-from torch.optim.lr_scheduler import ReduceLROnPlateau
+from torch.optim.lr_scheduler import CosineAnnealingLR
 from pathlib import Path
 import matplotlib.pyplot as plt
 
@@ -19,9 +19,9 @@ SAVE_PATH = BASE_DIR / "saved_models"
 PLOT_NAME = 'training_results.png'
 PLOT_DIR = BASE_DIR / "reports" / "plots"
 
-BATCH_SIZE = 32         # - rozmiar jednej paczki do nauki
-EPOCHS = 10              # - liczba przerobień całego datasetu
-LEARNING_RATE = 0.001   # - krok spadku błędu przy optymalizacji
+BATCH_SIZE = 32          # - rozmiar jednej paczki do nauki
+EPOCHS = 20              # - liczba przerobień całego datasetu
+LEARNING_RATE = 0.001    # - krok spadku błędu przy optymalizacji
 
 def train_model():
     # informacje o stałych
@@ -77,10 +77,10 @@ def train_model():
 
     model = model.to(device)
 
-    # Optymalizator, funkcja błędu, scheduler (Zmniejsza LR, gdy model przestaje się uczyć)
+    # Optymalizator AdamW z regularyzacją (Weight Decay) do walki z przeuczeniem
     criterion = nn.CrossEntropyLoss()
-    optimizer = optim.Adam(model.fc.parameters(), lr=LEARNING_RATE)
-    scheduler = ReduceLROnPlateau(optimizer, mode='min', patience=2, factor=0.5, verbose=True)
+    optimizer = optim.AdamW(model.fc.parameters(), lr=LEARNING_RATE, weight_decay=1e-4)
+    scheduler = None # Scheduler włączymy dopiero po odmrożeniu kręgosłupa
 
     # --- STRUKTURA DO PRZECHOWYWANIA STATYSTYK ---
     history = {
@@ -95,13 +95,18 @@ def train_model():
     for i in range(EPOCHS):
 
         # --- DWUETAPOWY TRENING (KROK 2: Odmrażanie w 5 epoce) ---
+        # --- DWUETAPOWY TRENING (KROK 2: Odmrażanie w 5 epoce) ---
         if i == 5:
-            print("\n>>> Odmrażanie całej sieci (Fine-Tuning)! Zmniejszam bazowy Learning Rate. <<<")
+            print("\n>>> Odmrażanie całej sieci (Fine-Tuning)! Włączam płynne opadanie (Cosine Annealing). <<<")
             for param in model.parameters():
                 param.requires_grad = True
-            # Tworzymy optymalizator na nowo, tym razem dla całej sieci z dużo mniejszym krokiem
-            optimizer = optim.Adam(model.parameters(), lr=0.0001)
-            scheduler = ReduceLROnPlateau(optimizer, mode='min', patience=2, factor=0.5, verbose=True)
+            
+            # Nowy optymalizator AdamW dla CAŁEJ sieci
+            optimizer = optim.AdamW(model.parameters(), lr=0.0001, weight_decay=1e-4)
+            
+            # NOWE: Płynne zmniejszanie LR aż do końca treningu
+            # T_max to liczba epok, która została do końca (EPOCHS - 5)
+            scheduler = CosineAnnealingLR(optimizer, T_max=EPOCHS-5, eta_min=1e-6)
 
         model.train() # - tryb nauki
         running_loss = float(0)
@@ -153,7 +158,8 @@ def train_model():
         epoch_val_acc = 100 * correct_val / total_val
 
         # aktualizacja Schedulera (sprawdza czy błąd walidacji spada)
-        scheduler.step(epoch_val_loss)
+        if scheduler is not None:
+            scheduler.step()
 
         # ZAPISYWANIE WYNIKÓW DO HISTORII
         history['train_loss'].append(epoch_train_loss)
