@@ -40,7 +40,7 @@ def evaluate_model():
 
     # 3. Transformacje dla danych testowych (TAKIE SAME jak walidacyjne)
     test_transforms = transforms.Compose([
-        transforms.Resize((224, 224)),
+        transforms.Resize((384, 384)),
         transforms.ToTensor(),
         transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
     ])

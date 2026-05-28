@@ -21,7 +21,7 @@ PLOT_DIR = BASE_DIR / "reports" / "plots"
 
 BATCH_SIZE = 32          # - rozmiar jednej paczki do nauki
 EPOCHS = 20              # - liczba przerobień całego datasetu
-LEARNING_RATE = 0.001    # - krok spadku błędu przy optymalizacji
+LEARNING_RATE = 0.0005    # - krok spadku błędu przy optymalizacji
 
 def train_model():
     # informacje o stałych
@@ -39,7 +39,7 @@ def train_model():
 
     # ekstremalna augmentacja do walki z przeuczeniem
     train_transforms_data = [
-        transforms.Resize((224, 224)),
+        transforms.Resize((384, 384)),
         transforms.RandomHorizontalFlip(),
         transforms.RandomRotation(15), # Losowe obroty o 15 stopni
         transforms.ColorJitter(brightness=0.2, contrast=0.2), # Zmiana oświetlenia
@@ -49,7 +49,7 @@ def train_model():
     train_transforms = transforms.Compose(train_transforms_data)
 
     val_transforms_data = [
-        transforms.Resize((224, 224)),
+        transforms.Resize((384, 384)),
         transforms.ToTensor(),
         transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
     ]
@@ -102,7 +102,7 @@ def train_model():
                 param.requires_grad = True
             
             # Nowy optymalizator AdamW dla CAŁEJ sieci
-            optimizer = optim.AdamW(model.parameters(), lr=0.0001, weight_decay=1e-4)
+            optimizer = optim.AdamW(model.parameters(), lr=0.00003, weight_decay=1e-4)
             
             # NOWE: Płynne zmniejszanie LR aż do końca treningu
             # T_max to liczba epok, która została do końca (EPOCHS - 5)
