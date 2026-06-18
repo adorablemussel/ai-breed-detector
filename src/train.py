@@ -65,21 +65,21 @@ def train_model():
     train_loader = DataLoader(train_dataset, batch_size=BATCH_SIZE, shuffle=True)
     val_loader = DataLoader(val_dataset, batch_size=BATCH_SIZE, shuffle=False)
 
-    # Budowa modelu (ResNet50)
+    # Budowa modelu (ConvNeXt-Tiny)
     model = get_model(class_count=class_count, pretrained=True)
     
     # --- DWUETAPOWY TRENING (KROK 1: Zamrożenie kręgosłupa) ---
     print("Inicjalizacja: Zamrażam kręgosłup sieci.")
     for param in model.parameters():
         param.requires_grad = False
-    for param in model.fc.parameters(): # Odmrażamy TYLKO nową głowę
+    for param in model.classifier.parameters(): # Odmrażamy TYLKO nową głowę (classifier)
         param.requires_grad = True
 
     model = model.to(device)
 
     # Optymalizator AdamW z regularyzacją (Weight Decay) do walki z przeuczeniem
     criterion = nn.CrossEntropyLoss()
-    optimizer = optim.AdamW(model.fc.parameters(), lr=LEARNING_RATE, weight_decay=1e-4)
+    optimizer = optim.AdamW(model.classifier.parameters(), lr=LEARNING_RATE, weight_decay=1e-4)
     scheduler = None # Scheduler włączymy dopiero po odmrożeniu kręgosłupa
 
     # --- STRUKTURA DO PRZECHOWYWANIA STATYSTYK ---
@@ -90,11 +90,14 @@ def train_model():
         'val_acc': []
     }
 
+    # Zmienne pomocnicze do zapisu wyłącznie najlepszych stanów modelu
+    best_val_loss = float('inf')
+    best_model_state = None
+
     # PĘTLA UCZENIA MASZYNOWEGO
     print("\nROZPOCZYNAM UCZENIE")
     for i in range(EPOCHS):
 
-        # --- DWUETAPOWY TRENING (KROK 2: Odmrażanie w 5 epoce) ---
         # --- DWUETAPOWY TRENING (KROK 2: Odmrażanie w 5 epoce) ---
         if i == 5:
             print("\n>>> Odmrażanie całej sieci (Fine-Tuning)! Włączam płynne opadanie (Cosine Annealing). <<<")
@@ -105,7 +108,6 @@ def train_model():
             optimizer = optim.AdamW(model.parameters(), lr=0.00003, weight_decay=1e-4)
             
             # NOWE: Płynne zmniejszanie LR aż do końca treningu
-            # T_max to liczba epok, która została do końca (EPOCHS - 5)
             scheduler = CosineAnnealingLR(optimizer, T_max=EPOCHS-5, eta_min=1e-6)
 
         model.train() # - tryb nauki
@@ -129,7 +131,6 @@ def train_model():
             total_train += labels.size(0)
             correct_train += (predicted == labels).sum().item()
 
-        # train_acc = 100 * correct_train / total_train
         epoch_train_loss = running_loss / len(train_loader)
         epoch_train_acc = 100 * correct_train / total_train
 
@@ -153,11 +154,10 @@ def train_model():
                 total_val += labels.size(0)
                 correct_val += (predicted == labels).sum().item()
 
-        # val_acc = 100 * correct_val / total_val
         epoch_val_loss = val_loss / len(val_loader)
         epoch_val_acc = 100 * correct_val / total_val
 
-        # aktualizacja Schedulera (sprawdza czy błąd walidacji spada)
+        # aktualizacja Schedulera 
         if scheduler is not None:
             scheduler.step()
 
@@ -167,12 +167,14 @@ def train_model():
         history['val_loss'].append(epoch_val_loss)
         history['val_acc'].append(epoch_val_acc)
 
-        # print(f"Epoka {i+1}/{EPOCHS} | "
-        #       f"Bład Treningu: {running_loss/len(train_loader):.4f} | Dokładność Treningu: {train_acc:.2f}% | "
-        #       f"Bład Walidacji: {val_loss/len(val_loader):.4f} | Dokładność Walidacji: {val_acc:.2f}%")
-        print(f"Epoka {i+1}/{EPOCHS} | "
-              f"Loss T: {epoch_train_loss:.4f} | Acc T: {epoch_train_acc:.2f}% | "
-              f"Loss V: {epoch_val_loss:.4f} | Acc V: {epoch_val_acc:.2f}%")
+        # Kontrola najlepszego modelu (Zapisujemy tylko jeśli walidacyjny loss spadł)
+        if epoch_val_loss < best_val_loss:
+            best_val_loss = epoch_val_loss
+            # Kopiujemy wagi (state_dict) do pamięci RAM, żeby zapisać je po zakończeniu pętli
+            best_model_state = {k: v.cpu() for k, v in model.state_dict().items()}
+            print(f"Epoka {i+1}/{EPOCHS} | Loss T: {epoch_train_loss:.4f} | Acc T: {epoch_train_acc:.2f}% | Loss V: {epoch_val_loss:.4f} | Acc V: {epoch_val_acc:.2f}% -> [Zapisano jako najlepszy model]")
+        else:
+            print(f"Epoka {i+1}/{EPOCHS} | Loss T: {epoch_train_loss:.4f} | Acc T: {epoch_train_acc:.2f}% | Loss V: {epoch_val_loss:.4f} | Acc V: {epoch_val_acc:.2f}%")
         
     # --- GENEROWANIE WYKRESÓW ---
     print("\nGenerowanie wykresów...")
@@ -202,10 +204,14 @@ def train_model():
     plt.savefig(PLOT_DIR / PLOT_NAME)
     print(f"Wykresy zostały zapisane jako: {PLOT_DIR / PLOT_NAME}")
         
-    # zapis modelu
+    # Zapis ostateczny najlepszego zapamiętanego stanu na dysk
     SAVE_PATH.mkdir(parents=True, exist_ok=True)
-    torch.save(model.state_dict(), SAVE_PATH/MODEL_NAME)
-    print(f"\nUkończono Proces Uczenia Maszynowego.\nModel został zapisany w: {SAVE_PATH/MODEL_NAME}")
+    if best_model_state is not None:
+        torch.save(best_model_state, SAVE_PATH/MODEL_NAME)
+    else:
+        torch.save(model.state_dict(), SAVE_PATH/MODEL_NAME)
+        
+    print(f"\nUkończono Proces Uczenia Maszynowego.\nNajlepszy model został zapisany w: {SAVE_PATH/MODEL_NAME}")
 
 if __name__ == "__main__":
     train_model()

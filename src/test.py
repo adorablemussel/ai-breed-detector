@@ -31,14 +31,13 @@ def evaluate_model():
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     print(f"Urządzenie obliczeniowe: {device}")
 
-    # 2. Ładowanie mapowania klas (opcjonalne, ale przydatne do osi na wykresach)
+    # 2. Ładowanie mapowania klas
     with open(CLASSES_JSON, "r") as f:
         breed_to_id = json.load(f)
-    # Odwrócenie słownika, żeby mieć id -> nazwa rasy
     id_to_breed = {v: k for k, v in breed_to_id.items()}
     class_count = len(breed_to_id)
 
-    # 3. Transformacje dla danych testowych (TAKIE SAME jak walidacyjne)
+    # 3. Transformacje dla danych testowych
     test_transforms = transforms.Compose([
         transforms.Resize((384, 384)),
         transforms.ToTensor(),
@@ -51,7 +50,7 @@ def evaluate_model():
 
     # 5. Budowa modelu z pliku i załadowanie wag z dysku
     model = get_model(class_count=class_count, pretrained=False)
-    model.load_state_dict(torch.load(MODEL_PATH, weights_only=True, map_location=device))
+    model.load_state_dict(torch.load(MODEL_PATH, map_location=device))
     model = model.to(device)
     model.eval() # Tryb oceny - BARDZO WAŻNE
 
@@ -73,21 +72,19 @@ def evaluate_model():
 
             outputs = model(images)
             
-            # --- Top-1 Accuracy (Standardowa dokładność) ---
+            # --- Top-1 Accuracy ---
             _, predicted = torch.max(outputs, 1)
             correct_top1 += (predicted == labels).sum().item()
             
             # --- Top-3 Accuracy ---
-            # torch.topk zwraca k największych wartości i ich indeksy
             _, top3_preds = torch.topk(outputs, 3, dim=1)
-            # Sprawdzamy czy prawdziwa etykieta jest w którymkolwiek z 3 typowań
             for i in range(labels.size(0)):
                 if labels[i] in top3_preds[i]:
                     correct_top3 += 1
 
             total += labels.size(0)
 
-            # Zbieranie danych do macierzy pomyłek (wymaga danych na CPU)
+            # Zbieranie danych do macierzy pomyłek
             all_preds.extend(predicted.cpu().numpy())
             all_labels.extend(labels.cpu().numpy())
 
@@ -108,23 +105,20 @@ def evaluate_model():
         f.write(f"Skutecznosc Top-3: {top3_acc:.2f}%\n")
         f.write(f"Przetestowano na lacznie: {total} obrazach.\n\n")
         
-        # Opcjonalnie: Pełny raport dla każdej klasy ze scikit-learn
         f.write(classification_report(all_labels, all_preds, target_names=[id_to_breed[i] for i in range(class_count)]))
     
     print(f"Raport zapisano do: {report_path}")
 
-    # 8. MACIERZ POMYŁEK (Confusion Matrix)
+    # 8. MACIERZ POMYŁEK
     print("\nGenerowanie Macierzy Pomyłek...")
     cm = confusion_matrix(all_labels, all_preds)
     
-    # Wykres będzie ogromny (120x120), więc ustawiamy duży figsize
     plt.figure(figsize=(40, 40))
     sns.heatmap(cm, annot=False, fmt='d', cmap='Blues', cbar=False)
     plt.title('Macierz Pomyłek (Confusion Matrix)', fontsize=40)
     plt.xlabel('Przewidziana Klasa', fontsize=30)
     plt.ylabel('Prawdziwa Klasa', fontsize=30)
     
-    # Zapis wykresu
     cm_path = RESULTS_DIR / "confusion_matrix.png"
     plt.tight_layout()
     plt.savefig(cm_path, dpi=100)
