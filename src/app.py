@@ -39,11 +39,10 @@ def predict_dog_breed(image):
     tensor = predict_transforms(image).unsqueeze(0).to(device)
     with torch.no_grad():
         outputs = model(tensor)
-        # obliczanie prawdopodobieństwa
-        probabilities = F.softmax(outputs, dim=1).squeeze(0)
-    # top 3 predykcje
+        probabilities = F.softmax(outputs, dim=1).squeeze(0) # obliczanie prawdopodobieństwa
+
     top3_prob, top3_indices = torch.topk(probabilities, 3)
-    # słownik wynikowy dla Gradio: { "nazwa_klasy": wartość }
+    # słownik wyników dla Gradio: { "nazwa_klasy": wartość }
     results = {}
     for i in range(3):
         breed_name = id_to_breed[top3_indices[i].item()]
@@ -60,8 +59,7 @@ customtheme=gr.themes.Soft(primary_hue="sky", neutral_hue='slate',).set(
     body_text_color="#E2E8F0",
     block_label_text_color="#E2E8F0",
     block_label_background_fill="#243388",
-    block_label_border_color="#243388",
-    
+    block_label_border_color="#243388", 
 )
 
 customcss="""
