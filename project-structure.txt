@@ -1,0 +1,39 @@
+ai-breed-detector/
+|
++-- data/
+|   +-- raw/                        (Pobrany dataset, np. ZIP z Kaggle i wypakowane foldery ras)
+|   |   +-- annotations
+|   |   +-- images
+|   +-- processed/                  (Przetworzone zdjęcia i podział na foldery: train/val/test)
+|   |   +-- test/
+|   |   +-- train/
+|   |   +-- val/
+|   |   +-- classes.json
+|
++-- notebooks/                      (Robocze brudnopisy w Jupyterze - do wizualizacji danych i szybkich testów)
+|
++-- reports/                        (Dokumentacja, kamienie milowe, raport końcowy)
+|   +-- models-plots/
+|   +-- models-reports/
+|   +-- presentations/
+|   +-- project-report/
+|   +-- screenshots/
+|   +-- milestones.txt
+|
++-- results/                        (Robocze wykresy uczenia z dokładnością i macierz pomyłek)
+|
++-- saved_models/                   (Wagi sieci po treningu, np. best_model.pth)
+|
++-- src/                            (Katalog z czystym kodem)
+|   +-- data_prep.py                (Skrypt dzielący zdjęcia na zbiory i robiący augmentację)
+|   +-- model.py                    (Definicja architektury sieci)
+|   +-- train.py                    (Główna pętla ucząca model)
+|   +-- app.py                      (Skrypt z inferencją/aplikacją w Gradio)
+|   +-- test.py                     (Skrypt ewaluacyjny)
+|
++-- venv/                           (Środowisko wirtualne Pythona)
+|
++-- .gitignore
++-- requirements.txt
++-- project-structure.txt           (JESTEŚ TUTAJ!)
++-- README.md
