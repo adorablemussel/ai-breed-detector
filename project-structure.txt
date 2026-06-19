@@ -1,5 +1,15 @@
 ai-breed-detector/
 |
++-- app/                            (Gotowa aplikacja, gotowa na deploy na Hugging Face)
+|   +-- app.py
+|   +-- best_model.pth
+|   +-- classes.json
+|   +-- model.py
+|   +-- Nela.png
+|   +-- PawBG.png
+|   +-- requirements.txt
+|   +-- style.css
+|
 +-- data/
 |   +-- raw/                        (Pobrany dataset, np. ZIP z Kaggle i wypakowane foldery ras)
 |   |   +-- annotations
