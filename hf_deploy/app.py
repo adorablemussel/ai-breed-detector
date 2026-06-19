@@ -6,6 +6,7 @@ from PIL import Image
 import json
 import base64
 from pathlib import Path
+from fastapi.staticfiles import StaticFiles
 from model import get_model
 
 CLASSES_JSON = "classes.json"
@@ -20,12 +21,14 @@ except Exception as e:
     NELA_B64 = ""
 
 def generate_nela_html(speech_text):
-    return f"""
-    <div class="nela-container">
-        <div class="speech-bubble">{speech_text}</div>
-        <img src="{NELA_B64}" class="nela-avatar" alt="Weterynarz Nela">
-    </div>
-    """
+        html_part = f"""
+        <div class="nela-container">
+                <div class="speech-bubble">{speech_text}</div>
+                <img src="{NELA_B64}" class="nela-avatar" alt="Weterynarz Nela">
+        </div>
+        """
+
+        return html_part
 
 try:
     with open(CLASSES_JSON, "r") as f:
@@ -103,6 +106,35 @@ def on_image_change(image):
         
     return generate_nela_html(speech), [], gr.update(interactive=False)
 
+NELA_JS = """
+(function(){
+    if (window.__nelaBubbleInstalled) return;
+    window.__nelaBubbleInstalled = true;
+    function updateBubble(){
+        const nela = document.querySelector('.nela-container');
+        if(!nela) return;
+        const bubble = nela.querySelector('.speech-bubble');
+        if(!bubble) return;
+        const shouldFloatBelow = window.innerWidth <= 768 && window.scrollY > 24;
+        if(shouldFloatBelow){
+            nela.classList.add('bubble-below');
+            bubble.classList.add('bubble-below');
+        } else {
+            nela.classList.remove('bubble-below');
+            bubble.classList.remove('bubble-below');
+        }
+    }
+    window.addEventListener('scroll', updateBubble, {passive:true});
+    window.addEventListener('resize', updateBubble);
+    const mo = new MutationObserver(()=> setTimeout(updateBubble, 100));
+    mo.observe(document.body, {childList:true, subtree:true, attributes:true});
+    setInterval(updateBubble, 100);
+    setTimeout(updateBubble, 400);
+})();
+"""
+
+NELA_HEAD = f"<script>{NELA_JS}</script>"
+
 customtheme = gr.themes.Soft(primary_hue="sky", neutral_hue='slate').set(
     background_fill_primary="#0B132B",
     background_fill_secondary="#1C2541",
@@ -132,7 +164,7 @@ except Exception as e:
     customcss = ""
 
 with gr.Blocks() as demo:
-    gr.HTML("<h1 class='title'>Poznaj rasę psa z Nelą!</h1>")
+    gr.HTML("<h1 class='title'>Poznaj Rasę Psa</h1>")
 
     current_results = gr.State()
 
@@ -170,6 +202,7 @@ with gr.Blocks() as demo:
         inputs=current_results,
         outputs=nela_display
     )
+    
 
 if __name__ == "__main__":
-    demo.launch(share=False, theme=customtheme, css=customcss)
+    demo.launch(server_name="0.0.0.0", theme=customtheme, css=customcss, head=NELA_HEAD)
