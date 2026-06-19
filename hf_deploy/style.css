@@ -18,7 +18,9 @@
 .main.fillable.svelte-99kmwu.app {
   width: 95%;
   max-width: 1700px;
-  margin: 0 auto*2;
+  margin: 0 auto;
+  position: relative; 
+  z-index: 10 !important;
 }
 
 .nela-container {
@@ -113,7 +115,46 @@
 }
 
 /* =========================================
-   Tu dymek wędruje nad głowę Neli
+                ANIMOWANE TŁO
+   ========================================= */
+.gradio-container::before {
+    content: '';
+    position: fixed;
+    top: -50%;
+    left: -50%;
+    width: 200%;
+    height: 200%;
+    
+    background-image: 
+        url('{{PAW_B64}}'),
+        url('{{PAW_B64}}');
+        
+    background-position: 
+        0 0, 
+        100px 100px; 
+        
+    background-size: 200px 200px; 
+    background-repeat: repeat;
+    
+    transform: rotate(-25deg);
+    z-index: 0; 
+    opacity: 0.08; 
+    pointer-events: none; 
+    
+    animation: pawMove 40s linear infinite; 
+}
+
+@keyframes pawMove {
+    0% {
+        background-position: 0 0, 100px 100px;
+    }
+    100% {
+        background-position: 1000px 1000px, 1100px 1100px;
+    }
+}
+
+/* =========================================
+        Tu dymek idzie nad głowę Neli
    ========================================= */
 @media (max-width: 1700px) {
     .nela-container {
@@ -156,7 +197,6 @@
     }
 }
 
-/* On narrow screens, place Nela above the upload column */
 @media (max-width: 768px) {
     .main-row {
         display: flex !important;
@@ -185,7 +225,6 @@
     }
 }
 
-/* When scrolled, move the speech bubble under Nela and keep it visible */
 .nela-container.bubble-below {
     flex-direction: column;
     align-items: center;

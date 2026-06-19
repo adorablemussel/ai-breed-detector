@@ -12,6 +12,19 @@ from model import get_model
 CLASSES_JSON = "classes.json"
 MODEL_PATH = "best_model.pth"
 NELA_IMG_PATH = "Nela.png"
+PAW_IMG_PATH = "PawBG.png"
+
+try:
+    with open(PAW_IMG_PATH, "rb") as f:
+
+        png_b64 = "data:image/png;base64," + base64.b64encode(f.read()).decode('utf-8')
+
+        svg_content = f"""<svg xmlns="http://www.w3.org/2000/svg" width="200" height="200"><image href="{png_b64}" x="60" y="60" width="80" height="80"/></svg>"""
+
+        PAW_B64 = "data:image/svg+xml;base64," + base64.b64encode(svg_content.encode('utf-8')).decode('utf-8')
+except Exception as e:
+    print(f"Nie znaleziono zdjęcia tła: {e}")
+    PAW_B64 = ""
 
 try:
     with open(NELA_IMG_PATH, "rb") as f:
@@ -159,6 +172,7 @@ css_file_path = Path(__file__).parent / "style.css"
 try:
     with open(css_file_path, "r", encoding="utf-8") as f:
         customcss = f.read()
+        customcss = customcss.replace("{{PAW_B64}}", PAW_B64)
 except Exception as e:
     print(f"Błąd ładowania pliku CSS: {e}")
     customcss = ""
