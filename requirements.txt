@@ -11,6 +11,11 @@
 torch
 torchvision
 
+# biblioteki do interpretowalności modeli
+grad-cam
+opencv-python-headless
+ultralytics
+
 # praca z danymi i matematyka
 numpy
 pandas

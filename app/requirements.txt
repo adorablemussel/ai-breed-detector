@@ -1,5 +1,8 @@
 torch
 torchvision
+grad-cam
+opencv-python-headless
+ultralytics
 numpy
 pandas
 scikit-learn
