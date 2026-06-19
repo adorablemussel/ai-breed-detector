@@ -7,7 +7,7 @@
 ## Wypróbuj aplikację
 Model został wdrożony do chmury i posiada przyjazny interfejs graficzny. Możesz przetestować go bezpośrednio w przeglądarce:
 
-👉 **[Uruchom AI Breed Detector na Hugging Face](https://huggingface.co/spaces/adorablemussel/ai-breed-detector)**
+👉 **[Uruchom AI Breed Detector na Hugging Face](https://adorablemussel-ai-breed-detector.hf.space/)**
 
 ---
 
