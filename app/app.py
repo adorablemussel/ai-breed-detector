@@ -1,3 +1,4 @@
+import os
 import gradio as gr
 import torch
 import torch.nn.functional as F
@@ -21,10 +22,8 @@ MODEL_PATH = "best_model.pth"
 NELA_IMG_PATH = "Nela.png"
 PAW_IMG_PATH = "PawBG.png"
 
-yolo_model = YOLO('yolo11n.pt') 
-
 def is_dog_present(image):
-    results = yolo_model(image)
+    results = yolo_model(image, conf=0.25, device=device.type)
     for r in results:
         for box in r.boxes:
             if int(box.cls) == 16:
@@ -64,8 +63,50 @@ except Exception as e:
     print(f"Błąd ładowania pliku classes.json: {e}")
     class_count = 120
 
-device = torch.device("cpu")
+def choice_device():
+    # HUGGING FACE
+    if "SPACE_ID" in os.environ:
+        print("\n--- ŚRODOWISKO HUGGING FACE ---")
+        if torch.cuda.is_available():
+            return "cuda"
+        elif torch.backends.mps.is_available():
+            return "mps"
+        else:
+            return "cpu"
+            
+    # LOKALNIE
+    print("\n--- ŚRODOWISKO LOKALNE ---")
+    
+    available_devices = ["cpu"]
+    if torch.cuda.is_available():
+        available_devices.append("cuda")
+    if torch.backends.mps.is_available():
+        available_devices.append("mps")
+
+    print("Wybierz urządzenie do uruchomienia modelu:")
+    for i, dev in enumerate(available_devices):
+        if dev == "cpu":
+            print(f"{i + 1}. CPU")
+        elif dev == "cuda":
+            print(f"{i + 1}. GPU")
+        elif dev == "mps":
+            print(f"{i + 1}. MPS")
+
+    while True:
+        choice = input(f"Twój wybór (1-{len(available_devices)}): ")
+        try:
+            choice_idx = int(choice) - 1
+            if 0 <= choice_idx < len(available_devices):
+                return available_devices[choice_idx]
+        except ValueError:
+            pass
+        print(f"Nieprawidłowy wybór. Wprowadź liczbę od 1 do {len(available_devices)}.")
+
+device = torch.device(choice_device())
 print(f"Uruchamiam aplikację na urządzeniu: {device}")
+
+yolo_model = YOLO('yolo11m.pt') 
+yolo_model.to(device)
 
 model = get_model(class_count=class_count, pretrained=False)
 model.load_state_dict(torch.load(MODEL_PATH, map_location=device, weights_only=True))
@@ -73,7 +114,7 @@ model = model.to(device)
 model.eval()
 
 predict_transforms = transforms.Compose([
-    transforms.Resize((224, 224)),
+    transforms.Resize((384, 384)),
     transforms.ToTensor(),
     transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
 ])
@@ -142,7 +183,7 @@ def show_details(saved_state):
         
         with GradCAM(model=model, target_layers=target_layers) as cam:
             targets = [ClassifierOutputTarget(top_index)]
-            # Otrzymujemy maskę kwadratową (224x224)
+            # Otrzymujemy maskę kwadratową (384x384)
             grayscale_cam = cam(input_tensor=tensor, targets=targets)[0]
             
         orig_width, orig_height = img_pil.size
@@ -264,4 +305,9 @@ with gr.Blocks() as demo:
     )
 
 if __name__ == "__main__":
-    demo.launch(server_name="0.0.0.0", theme=customtheme, css=customcss, js=NELA_JS)
+    demo.launch(
+        server_name="0.0.0.0", 
+        theme=customtheme, 
+        css=customcss, 
+        js=NELA_JS,
+    )
