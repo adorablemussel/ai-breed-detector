@@ -22,47 +22,6 @@ MODEL_PATH = "best_model.pth"
 NELA_IMG_PATH = "Nela.png"
 PAW_IMG_PATH = "PawBG.png"
 
-def is_dog_present(image):
-    results = yolo_model(image, conf=0.25, device=device.type)
-    for r in results:
-        for box in r.boxes:
-            if int(box.cls) == 16:
-                return True
-    return False
-
-try:
-    with open(PAW_IMG_PATH, "rb") as f:
-        png_b64 = "data:image/png;base64," + base64.b64encode(f.read()).decode('utf-8')
-        svg_content = f"""<svg xmlns="http://www.w3.org/2000/svg" width="200" height="200"><image href="{png_b64}" x="60" y="60" width="80" height="80"/></svg>"""
-        PAW_B64 = "data:image/svg+xml;base64," + base64.b64encode(svg_content.encode('utf-8')).decode('utf-8')
-except Exception as e:
-    print(f"Nie znaleziono zdjęcia tła: {e}")
-    PAW_B64 = ""
-
-try:
-    with open(NELA_IMG_PATH, "rb") as f:
-        NELA_B64 = "data:image/png;base64," + base64.b64encode(f.read()).decode('utf-8')
-except Exception as e:
-    print(f"Nie znaleziono zdjęcia awatara: {e}")
-    NELA_B64 = ""
-
-def generate_nela_html(speech_text):
-    return f"""
-    <div class="nela-container">
-            <div class="speech-bubble">{speech_text}</div>
-            <img src="{NELA_B64}" class="nela-avatar" alt="Weterynarz Nela">
-    </div>
-    """
-
-try:
-    with open(CLASSES_JSON, "r") as f:
-        breed_to_id = json.load(f)
-    id_to_breed = {v: k.replace('_', ' ').title() for k, v in breed_to_id.items()}
-    class_count = len(id_to_breed)
-except Exception as e:
-    print(f"Błąd ładowania pliku classes.json: {e}")
-    class_count = 120
-
 def choice_device():
     # HUGGING FACE
     if "SPACE_ID" in os.environ:
@@ -108,6 +67,55 @@ print(f"Uruchamiam aplikację na urządzeniu: {device}")
 yolo_model = YOLO('yolo11m.pt') 
 yolo_model.to(device)
 
+def get_dog_box(image):
+    """Zwraca współrzędne (xmin, ymin, xmax, ymax) psa na zdjęciu za pomocą YOLO."""
+    results = yolo_model(image, conf=0.25, device=device.type)
+    best_box = None
+    highest_conf = 0
+    for r in results:
+        for box in r.boxes:
+            if int(box.cls) == 16: # Klasa 16 to 'dog' w YOLO
+                conf = float(box.conf)
+                if conf > highest_conf:
+                    highest_conf = conf
+                    best_box = box.xyxy[0].cpu().numpy()
+    if best_box is not None:
+        return tuple(map(int, best_box))
+    return None
+
+try:
+    with open(PAW_IMG_PATH, "rb") as f:
+        png_b64 = "data:image/png;base64," + base64.b64encode(f.read()).decode('utf-8')
+        svg_content = f"""<svg xmlns="http://www.w3.org/2000/svg" width="200" height="200"><image href="{png_b64}" x="60" y="60" width="80" height="80"/></svg>"""
+        PAW_B64 = "data:image/svg+xml;base64," + base64.b64encode(svg_content.encode('utf-8')).decode('utf-8')
+except Exception as e:
+    print(f"Nie znaleziono zdjęcia tła: {e}")
+    PAW_B64 = ""
+
+try:
+    with open(NELA_IMG_PATH, "rb") as f:
+        NELA_B64 = "data:image/png;base64," + base64.b64encode(f.read()).decode('utf-8')
+except Exception as e:
+    print(f"Nie znaleziono zdjęcia awatara: {e}")
+    NELA_B64 = ""
+
+def generate_nela_html(speech_text):
+    return f"""
+    <div class="nela-container">
+            <div class="speech-bubble">{speech_text}</div>
+            <img src="{NELA_B64}" class="nela-avatar" alt="Weterynarz Nela">
+    </div>
+    """
+
+try:
+    with open(CLASSES_JSON, "r") as f:
+        breed_to_id = json.load(f)
+    id_to_breed = {v: k.replace('_', ' ').title() for k, v in breed_to_id.items()}
+    class_count = len(id_to_breed)
+except Exception as e:
+    print(f"Błąd ładowania pliku classes.json: {e}")
+    class_count = 120
+
 model = get_model(class_count=class_count, pretrained=False)
 model.load_state_dict(torch.load(MODEL_PATH, map_location=device, weights_only=True))
 model = model.to(device)
@@ -124,11 +132,16 @@ def predict_dog_breed(image):
         speech = "Proszę, wgraj najpierw zdjęcie pieska! Nie potrafię diagnozować powietrza."
         return generate_nela_html(speech), None, gr.update(interactive=False), gr.update(label="Wgraj zdjęcie psa"), gr.update(interactive=True)
 
-    if not is_dog_present(image):
+    box = get_dog_box(image)
+
+    if box is None:
         speech = "Ojej, obawiam się, że na tym zdjęciu nie widzę żadnego pieska! Nie przeceniaj mnie, jestem tylko weterynarzem."
         return generate_nela_html(speech), None, gr.update(interactive=False), gr.update(label="Wgraj zdjęcie psa"), gr.update(interactive=True)
 
-    image_rgb = image.convert("RGB")
+    xmin, ymin, xmax, ymax = box
+    cropped_dog = image.crop((xmin, ymin, xmax, ymax))
+
+    image_rgb = cropped_dog.convert("RGB")
     tensor = predict_transforms(image_rgb).unsqueeze(0).to(device)
     
     with torch.no_grad():
@@ -158,8 +171,9 @@ def predict_dog_breed(image):
         
     state_data = {
         'results': results,
-        'image': image_rgb,
+        'image': image.convert("RGB"),
         'tensor': tensor,
+        'box': box,
         'top_index': top3_indices[0].item()
     }
         
@@ -172,7 +186,10 @@ def show_details(saved_state):
     results = saved_state['results']
     img_pil = saved_state['image']
     tensor = saved_state['tensor']
+    box = saved_state['box']
     top_index = saved_state['top_index']
+    
+    xmin, ymin, xmax, ymax = box
     
     speech = "Jasne, oto dokładne wyniki z laboratorium oraz mapa cieplna pokazująca na co zwróciłam uwagę:<br><br>"
     for breed, conf in results:
@@ -183,18 +200,30 @@ def show_details(saved_state):
         
         with GradCAM(model=model, target_layers=target_layers) as cam:
             targets = [ClassifierOutputTarget(top_index)]
-            # Otrzymujemy maskę kwadratową (384x384)
             grayscale_cam = cam(input_tensor=tensor, targets=targets)[0]
             
         orig_width, orig_height = img_pil.size
+        crop_width = xmax - xmin
+        crop_height = ymax - ymin
         
-        grayscale_cam_resized = cv2.resize(grayscale_cam, (orig_width, orig_height))
+        grayscale_cam_resized = cv2.resize(grayscale_cam, (crop_width, crop_height))
+        
+        full_mask = np.zeros((orig_height, orig_width), dtype=np.float32)
+        
+        full_mask[ymin:ymax, xmin:xmax] = grayscale_cam_resized
         
         img_np = np.array(img_pil) / 255.0
+        heatmap_visualization = show_cam_on_image(img_np, full_mask, use_rgb=True)
         
-        heatmap_visualization = show_cam_on_image(img_np, grayscale_cam_resized, use_rgb=True)
+        thickness = max(2, int(orig_width * 0.005))
+        cv2.rectangle(heatmap_visualization, (xmin, ymin), (xmax, ymax), (0, 255, 0), thickness)
         
-        return generate_nela_html(speech), gr.update(value=heatmap_visualization, label="Mapa cieplna (Grad-CAM)"), gr.update(interactive=False)
+        # text_scale = max(0.6, orig_width * 0.0015)
+        # text_thickness = max(1, int(orig_width * 0.003))
+        # text_y = ymin - 10 if ymin - 10 > 20 else ymin + 25 
+        # cv2.putText(heatmap_visualization, "znaleziony piesek", (xmin, text_y), cv2.FONT_HERSHEY_SIMPLEX, text_scale, (0, 255, 0), text_thickness)
+        
+        return generate_nela_html(speech), gr.update(value=heatmap_visualization, label="Analiza pełnego zdjęcia"), gr.update(interactive=False)
         
     except Exception as e:
         print(f"Błąd przy generowaniu XAI (Grad-CAM): {e}")
@@ -303,6 +332,9 @@ with gr.Blocks() as demo:
         inputs=current_results,
         outputs=[nela_display, input_img, btn_predict]
     )
+
+demo.title = "Weterynarz Nela - Rozpoznaj Rasę Psa"
+demo.favicon_path = "favicon.ico"
 
 if __name__ == "__main__":
     demo.launch(

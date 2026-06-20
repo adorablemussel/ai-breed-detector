@@ -68,6 +68,13 @@
     border-color: transparent transparent transparent #243388; 
 }
 
+.upload-image button[aria-label*="fullscreen"],
+.upload-image button[aria-label*="Fullscreen"],
+.upload-image button[aria-label*="expand"],
+.upload-image button[aria-label*="Expand"] {
+    display: none !important;
+}
+
 .upload-image {
     height: 540px;
 }
